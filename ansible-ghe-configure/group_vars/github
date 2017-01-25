@@ -5,10 +5,12 @@ ec2_region: us-east-1
 ec2_zone:
 ec2_image: ami-511ba53a #GitHub Enterprise v2.3.2
 ec2_instance_type: r3.large
-ec2_keypair: faushouse
+ec2_keypair: mykey
 ec2_security_group: ghe
 ec2_instance_count: 1
-ec2_tag: ghe-gitaboard
+ec2_tag: ghe
 ebs_optimized: yes
-server_type: ghe-gitaboard
+server_type: ghe-server
 aws_timeout: 320
+mc_password:
+
