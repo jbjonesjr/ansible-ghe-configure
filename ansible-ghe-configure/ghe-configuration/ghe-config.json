@@ -2,7 +2,7 @@
   "mc_password": "",
   "private_mode": false,
   "signup_enabled": true,
-  "github_hostname": "ghe2.mydomain.com",
+  "github_hostname": "github.example.com",
   "github_ssl": {
     "enabled": false,
     "cert": null,
