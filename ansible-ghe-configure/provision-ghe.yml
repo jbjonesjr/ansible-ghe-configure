@@ -1,0 +1,43 @@
+---
+#Provision GitHub Enterprise
+- hosts: localhost
+  gather_facts: False
+
+  vars_files:
+  - group_vars/github
+
+  tasks:
+  - name: Launch AWS GHE Instance
+    ec2:
+     access_key: "{{ ec2_access_key }}"
+     secret_key: "{{ ec2_secret_key }}"
+     keypair: "{{ ec2_keypair }}"
+     group: "{{ ec2_security_group }}"
+     type: "{{ ec2_instance_type }}"
+     image: "{{ ec2_image }}"
+     region: "{{ ec2_region }}"
+     instance_tags: "{'group':'{{ ec2_security_group }}','Name':'{{ server_type }}'}"
+     count: "{{ ec2_instance_count }}"
+     wait: true
+     volumes:
+       - volume_size: 10
+         device_name: /dev/sdb
+         device_type: gp2
+         delete_on_termination: true
+    register: ec2
+
+  - name: Wait for Admin Port to come up (Port 8443)
+    wait_for: host={{ item.public_dns_name }} port=8443 delay=60 timeout={{ aws_timeout }} state=started
+    with_items: ec2.instances
+
+  - name: Setup License and Admin Password
+    local_action: command curl -L -X POST -k 'https://{{ ec2.instances[0].public_ip }}:8443/setup/api/start' -F license=@ghe-configuration/github-enterprise.ghl -F "password={{ mc_password }}"
+
+  - name: Configure Instance Through JSON
+    local_action: command curl -L -X PUT -k 'https://api_key:{{ mc_password }}@{{ ec2.instances[0].public_ip }}:8443/setup/api/settings' --data-urlencode "settings=`cat ghe-configuration/ghe-config.json`"
+
+  - name: Rerun Configure for Settings to Take Effect
+    local_action: command  curl -L -X POST -k 'https://api_key:{{ mc_password }}@{{ ec2.instances[0].public_ip }}:8443/setup/api/configure'
+
+  - name: Wait for Non-HTTPS Web Admin (Port 8080)
+    wait_for: host={{ ec2.instances[0].public_ip }} port=8080 delay=60 timeout={{ aws_timeout }} state=started
